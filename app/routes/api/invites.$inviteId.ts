@@ -30,7 +30,10 @@ export const Route = createAPIFileRoute('/api/invites/$inviteId')({
 		if (existingInvite.status === 'pending') {
 			existingInvite.status = body.status;
 		}
-		existingInvite.permissions = body.permissions;
+
+		if (body.permissions) {
+			existingInvite.permissions = body.permissions;
+		}
 
 		return json({
 			data: null,

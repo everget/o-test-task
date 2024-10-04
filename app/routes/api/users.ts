@@ -6,6 +6,7 @@ import { generateUniqueId } from '~/lib/generate-unique-id';
 export const Route = createAPIFileRoute('/api/users')({
 	// All users
 	GET: ({ request, params }) => {
+		console.log(new URLSearchParams(request.url.split('?')[1]));
 		return json({ data: db.data.users, meta: { status: 200 }, errors: null });
 	},
 

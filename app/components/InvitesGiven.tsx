@@ -5,7 +5,6 @@ import React, { useState } from 'react';
 import {
 	Button,
 	Cell,
-	Checkbox,
 	Column,
 	ComboBox,
 	Dialog,
@@ -20,7 +19,6 @@ import {
 	ModalOverlay,
 	Popover,
 	Row,
-	Switch,
 	Table,
 	TableBody,
 	TableHeader,
@@ -32,6 +30,7 @@ import { reducePermissions } from '~/lib/reduce-permissions';
 import { Invite, Permission, User } from '~/types';
 import { ChevronDownIcon } from './ChevronDownIcon';
 import { ChevronUpIcon } from './ChevronUpIcon';
+import { PermissionSwitch } from './PermissionSwitch';
 import { TrashIcon } from './TrashIcon';
 
 const inviteSchema = z.object({
@@ -56,7 +55,7 @@ const fetchInvitesGiven = async ({ userId }: { userId: string }) => {
 };
 
 const fetchUsers = async (query: string) => {
-	const response = await fetch(`/api/users`); //?search=${query}
+	const response = await fetch(`/api/users?search=${query}`);
 	return response.json();
 };
 
@@ -74,11 +73,11 @@ export function InvitesGiven({ userId }: { userId: string }) {
 	const { data: users } = useQuery({
 		queryKey: ['users', userQuery],
 		queryFn: () => fetchUsers(userQuery),
-		// enabled: userQuery.length > 0,
+		enabled: userQuery.length > 0,
 	});
 
 	const createInviteMutation = useMutation({
-		mutationFn: (newInvite: Omit<Invite, 'id' | 'status'>) => {
+		mutationFn: (newInvite: Omit<Invite, 'id' | 'status' | 'createdAt'>) => {
 			return fetch('/api/invites', {
 				method: 'POST',
 				body: JSON.stringify(newInvite),
@@ -119,8 +118,8 @@ export function InvitesGiven({ userId }: { userId: string }) {
 	};
 
 	const handlePermissionToggle = (inviteId: string, permission: string, isChecked: boolean) => {
-		if (Array.isArray(invites)) {
-			const invite = invites.find((inv) => inv.id === inviteId);
+		if (invites && Array.isArray(invites.data)) {
+			const invite = invites.data.find((inv: Invite) => inv.id === inviteId);
 			if (invite) {
 				const updatedPermissions = isChecked
 					? [...invite.permissions, permission]
@@ -147,7 +146,6 @@ export function InvitesGiven({ userId }: { userId: string }) {
 			fromUserId: userId,
 			toUserId: (selectedUser as User).id,
 			permissions: [], //data.permissions,
-			createdAt: new Date(),
 		});
 		reset();
 		setSelectedUser(null);
@@ -155,25 +153,23 @@ export function InvitesGiven({ userId }: { userId: string }) {
 
 	return (
 		<div className='p-4'>
-			<Heading level={1}>Invites Given</Heading>
+			<Heading className='mb-4 text-md font-bold' level={1}>
+				Invites Given
+			</Heading>
 			<div className='flex space-x-4'>
-				<ComboBox
-					className='flex-grow relative'
-					inputValue={selectedUser || undefined}
-					// onChange={setSelectedUser}
-				>
+				<ComboBox className='flex-grow relative'>
 					<Label className='sr-only'>Search for an user</Label>
 					<div className='flex'>
 						<Input
 							className='w-full px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
-							placeholder='Search for an user'
+							placeholder='Search for a invitee'
 							onChange={(event) => setUserQuery(event.target.value)}
 						/>
 						<Button className='px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500'>
 							▼
 						</Button>
 					</div>
-					<Popover className='w-full'>
+					<Popover>
 						<ListBox className='absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm'>
 							{users &&
 								Array.isArray(users.data) &&
@@ -236,32 +232,32 @@ export function InvitesGiven({ userId }: { userId: string }) {
 														control={control}
 														render={({ field }) => (
 															<div className='flex space-x-4'>
-																<Checkbox
+																<PermissionSwitch
 																	isSelected={field.value?.includes(
 																		`read_${category}` as Permission
 																	)}
-																	onChange={(isSelected) => {
-																		// ... (checkbox logic)
+																	onChange={(
+																		isSelected: boolean
+																	) => {
+																		// ... (permissionswitch logic)
 																	}}
-																	className='flex items-center'
-																>
-																	<span className='ml-2 text-sm text-gray-600'>
-																		Read
-																	</span>
-																</Checkbox>
-																<Checkbox
+																	permission={
+																		`read_${category}` as Permission
+																	}
+																/>
+																<PermissionSwitch
 																	isSelected={field.value?.includes(
 																		`write_${category}` as Permission
 																	)}
-																	onChange={(isSelected) => {
-																		// ... (checkbox logic)
+																	onChange={(
+																		isSelected: boolean
+																	) => {
+																		// ... (permissionswitch logic)
 																	}}
-																	className='flex items-center'
-																>
-																	<span className='ml-2 text-sm text-gray-600'>
-																		Write
-																	</span>
-																</Checkbox>
+																	permission={
+																		`write_${category}` as Permission
+																	}
+																/>
 															</div>
 														)}
 													/>
@@ -319,15 +315,15 @@ export function InvitesGiven({ userId }: { userId: string }) {
 						invites.data.map((invite: Invite) => (
 							<React.Fragment key={invite.id}>
 								<Row className='hover:bg-gray-50'>
-									<Cell className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
+									<Cell className='px-6 py-4 whitespace-nowrap text-gray-900'>
 										{invite.toUserId}
 									</Cell>
-									<Cell className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+									<Cell className='px-6 py-4 whitespace-nowrap text-gray-500'>
 										{invite.permissions &&
 											JSON.stringify(reducePermissions(invite.permissions))}
 									</Cell>
 									<Cell
-										className={clsx('px-6 py-4 whitespace-nowrap text-sm', {
+										className={clsx('px-6 py-4 whitespace-nowrap', {
 											'text-yellow-600': invite.status === 'pending',
 											'text-green-600': invite.status === 'accepted',
 											'text-red-600': invite.status === 'declined',
@@ -335,7 +331,7 @@ export function InvitesGiven({ userId }: { userId: string }) {
 									>
 										{invite.status}
 									</Cell>
-									<Cell className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
+									<Cell className='px-6 py-4 whitespace-nowrap text-gray-500'>
 										<div className='flex space-x-2'>
 											<Button
 												onPress={() => toggleRowExpansion(invite.id)}
@@ -364,38 +360,46 @@ export function InvitesGiven({ userId }: { userId: string }) {
 													Invite sent:{' '}
 													{new Date(invite.createdAt).toLocaleString()}
 												</p>
-												<div className='grid grid-cols-2 gap-4'>
-													{[
-														'read_posts',
-														'write_posts',
-														'read_messages',
-														'write_messages',
-														'read_profile',
-														'write_profile',
-													].map((permission) => (
-														<div
-															key={permission}
-															className='flex items-center justify-between'
-														>
-															<Switch
-																isSelected={invite.permissions.includes(
-																	permission as Permission
-																)}
-																onChange={(isSelected) =>
-																	handlePermissionToggle(
-																		invite.id,
-																		permission,
-																		isSelected
-																	)
-																}
-															>
-																{permission}
-															</Switch>
-														</div>
-													))}
-												</div>
 											</div>
 										</Cell>
+										{['posts', 'messages', 'profile'].map((category) => {
+											const readPermission = `read_${category}` as Permission;
+											const writePermission =
+												`write_${category}` as Permission;
+
+											return (
+												<Cell className='px-6 py-4 bg-gray-50'>
+													<div key={category} className='flex flex-col'>
+														<PermissionSwitch
+															permission={readPermission}
+															isSelected={invite.permissions.includes(
+																readPermission
+															)}
+															onChange={(isSelected) =>
+																handlePermissionToggle(
+																	invite.id,
+																	readPermission,
+																	isSelected
+																)
+															}
+														/>
+														<PermissionSwitch
+															permission={writePermission}
+															isSelected={invite.permissions.includes(
+																writePermission
+															)}
+															onChange={(isSelected) =>
+																handlePermissionToggle(
+																	invite.id,
+																	writePermission,
+																	isSelected
+																)
+															}
+														/>
+													</div>
+												</Cell>
+											);
+										})}
 									</Row>
 								)}
 							</React.Fragment>

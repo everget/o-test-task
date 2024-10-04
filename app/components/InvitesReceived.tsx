@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Button, Cell, Column, Row, Table, TableBody, TableHeader } from 'react-aria-components';
+import {
+	Button,
+	Cell,
+	Column,
+	Heading,
+	Row,
+	Table,
+	TableBody,
+	TableHeader,
+} from 'react-aria-components';
 import { reducePermissions } from '~/lib/reduce-permissions';
 import { Invite, InviteStatus } from '~/types';
 
@@ -15,6 +24,7 @@ export function InvitesReceived({ userId }: { userId: string }) {
 	const { data: invites } = useQuery({
 		queryKey: ['invitesReceived', userId],
 		queryFn: () => fetchInvitesReceived({ userId }),
+		staleTime: 1000 * 30,
 	});
 
 	const updateInviteMutation = useMutation({
@@ -34,7 +44,10 @@ export function InvitesReceived({ userId }: { userId: string }) {
 	};
 
 	return (
-		<div>
+		<div className='p-4'>
+			<Heading className='mb-4 text-md font-bold' level={1}>
+				Invites Received
+			</Heading>
 			<Table
 				aria-label='Invites received'
 				className='min-w-full bg-white border border-gray-300 mt-8 rounded-lg overflow-hidden'

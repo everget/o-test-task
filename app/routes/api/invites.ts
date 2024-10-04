@@ -19,7 +19,7 @@ export const Route = createAPIFileRoute('/api/invites')({
 			id: generateUniqueId(),
 			fromUserId: body.userId,
 			toUserId: body.toUserId,
-			permissions: JSON.parse(body.permissions),
+			permissions: body.permissions,
 			status: 'pending',
 			createdAt: new Date(),
 		});
