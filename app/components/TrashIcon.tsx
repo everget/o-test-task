@@ -1,7 +1,7 @@
 export function TrashIcon() {
 	return (
 		<svg
-			className='h-5 w-5 text-red-500'
+			className='h-6 w-6 text-red-500'
 			fill='none'
 			stroke='currentColor'
 			viewBox='0 0 24 24'

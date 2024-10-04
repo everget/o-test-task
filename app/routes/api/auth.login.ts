@@ -17,7 +17,11 @@ export const Route = createAPIFileRoute('/api/auth/login')({
 				hasInvite: false,
 			});
 		}
-		console.log(db.data.users);
-		return json({ data: null, errors: null });
+
+		return json({
+			data: null,
+			meta: { status: 200 },
+			errors: null,
+		});
 	},
 });

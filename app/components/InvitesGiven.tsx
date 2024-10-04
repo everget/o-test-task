@@ -50,13 +50,13 @@ const inviteSchema = z.object({
 
 type InviteFormData = z.infer<typeof inviteSchema>;
 
-const fetchInvites = async ({ pageParam = 0 }) => {
-	const response = await fetch(`/api/invites?page=${pageParam}`);
+const fetchInvitesGiven = async ({ userId }: { userId: string }) => {
+	const response = await fetch(`/api/users/${userId}/invites/given`);
 	return response.json();
 };
 
 const fetchUsers = async (query: string) => {
-	const response = await fetch(`/api/users?search=${query}`);
+	const response = await fetch(`/api/users`); //?search=${query}
 	return response.json();
 };
 
@@ -67,21 +67,14 @@ export function InvitesGiven({ userId }: { userId: string }) {
 	const [userQuery, setUserQuery] = useState('');
 
 	const { data: invites } = useQuery({
-		queryKey: ['invites', userId],
-		queryFn: () => fetchInvites,
+		queryKey: ['invitesGiven', userId],
+		queryFn: () => fetchInvitesGiven({ userId }),
 	});
-
-	// const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-	// 	queryKey: ['invitesGiven', userId],
-	// 	queryFn: fetchInvites,
-	// 	initialPageParam: 1,
-	// 	getNextPageParam: (lastPage) => lastPage.nextCursor,
-	// });
 
 	const { data: users } = useQuery({
 		queryKey: ['users', userQuery],
 		queryFn: () => fetchUsers(userQuery),
-		enabled: userQuery.length > 0,
+		// enabled: userQuery.length > 0,
 	});
 
 	const createInviteMutation = useMutation({
@@ -132,7 +125,7 @@ export function InvitesGiven({ userId }: { userId: string }) {
 				const updatedPermissions = isChecked
 					? [...invite.permissions, permission]
 					: invite.permissions.filter((p: Permission) => p !== permission);
-				// updatePermissionsMutation.mutate({ inviteId, permissions: updatedPermissions });
+				updatePermissionsMutation.mutate({ inviteId, permissions: updatedPermissions });
 			}
 		}
 	};
@@ -174,7 +167,7 @@ export function InvitesGiven({ userId }: { userId: string }) {
 						<Input
 							className='w-full px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500'
 							placeholder='Search for an user'
-							// onChange={(event) => setUserQuery(event.target.value)}
+							onChange={(event) => setUserQuery(event.target.value)}
 						/>
 						<Button className='px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500'>
 							▼
@@ -182,8 +175,9 @@ export function InvitesGiven({ userId }: { userId: string }) {
 					</div>
 					<Popover className='w-full'>
 						<ListBox className='absolute z-10 w-full py-1 mt-1 overflow-auto text-base bg-white rounded-md shadow-lg max-h-60 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm'>
-							{Array.isArray(users) &&
-								users.map((user) => (
+							{users &&
+								Array.isArray(users.data) &&
+								users.data.map((user: User) => (
 									<ListBoxItem
 										key={user.id}
 										id={user.id}
@@ -298,7 +292,7 @@ export function InvitesGiven({ userId }: { userId: string }) {
 						isRowHeader={true}
 						className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100'
 					>
-						Email
+						To Email
 					</Column>
 					<Column
 						isRowHeader={true}
@@ -320,15 +314,17 @@ export function InvitesGiven({ userId }: { userId: string }) {
 					</Column>
 				</TableHeader>
 				<TableBody>
-					{Array.isArray(invites) &&
-						invites.map((invite: Invite) => (
+					{invites &&
+						Array.isArray(invites.data) &&
+						invites.data.map((invite: Invite) => (
 							<React.Fragment key={invite.id}>
 								<Row className='hover:bg-gray-50'>
 									<Cell className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
 										{invite.toUserId}
 									</Cell>
 									<Cell className='px-6 py-4 whitespace-nowrap text-sm text-gray-500'>
-										{JSON.stringify(reducePermissions(invite.permissions))}
+										{invite.permissions &&
+											JSON.stringify(reducePermissions(invite.permissions))}
 									</Cell>
 									<Cell
 										className={clsx('px-6 py-4 whitespace-nowrap text-sm', {
@@ -343,7 +339,7 @@ export function InvitesGiven({ userId }: { userId: string }) {
 										<div className='flex space-x-2'>
 											<Button
 												onPress={() => toggleRowExpansion(invite.id)}
-												className='p-1 rounded-full hover:bg-gray-200'
+												className='p-1 rounded-full bg-indigo-500 hover:bg-indigo-600'
 											>
 												{expandedRows[invite.id] ? (
 													<ChevronUpIcon />

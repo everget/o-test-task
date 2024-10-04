@@ -4,8 +4,8 @@ import { Button, Cell, Column, Row, Table, TableBody, TableHeader } from 'react-
 import { reducePermissions } from '~/lib/reduce-permissions';
 import { Invite, InviteStatus } from '~/types';
 
-const fetchInvites = async ({ pageParam = 0 }) => {
-	const response = await fetch(`/api/invites/received?page=${pageParam}`);
+const fetchInvitesReceived = async ({ userId }: { userId: string }) => {
+	const response = await fetch(`/api/users/${userId}/invites/received`);
 	return response.json();
 };
 
@@ -14,7 +14,7 @@ export function InvitesReceived({ userId }: { userId: string }) {
 
 	const { data: invites } = useQuery({
 		queryKey: ['invitesReceived', userId],
-		queryFn: () => fetchInvites,
+		queryFn: () => fetchInvitesReceived({ userId }),
 	});
 
 	const updateInviteMutation = useMutation({
@@ -44,7 +44,7 @@ export function InvitesReceived({ userId }: { userId: string }) {
 						isRowHeader={true}
 						className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100'
 					>
-						From
+						From Email
 					</Column>
 					<Column
 						isRowHeader={true}
@@ -66,14 +66,16 @@ export function InvitesReceived({ userId }: { userId: string }) {
 					</Column>
 				</TableHeader>
 				<TableBody>
-					{Array.isArray(invites) &&
-						invites.map((invite: Invite) => (
+					{invites &&
+						Array.isArray(invites.data) &&
+						invites.data.map((invite: Invite) => (
 							<Row key={invite.id} className='hover:bg-gray-50'>
 								<Cell className='px-6 py-4 whitespace-nowrap'>
 									{invite.fromUserId}
 								</Cell>
 								<Cell className='px-6 py-4 whitespace-nowrap'>
-									{JSON.stringify(reducePermissions(invite.permissions))}
+									{invite.permissions &&
+										JSON.stringify(reducePermissions(invite.permissions))}
 								</Cell>
 								<Cell
 									className={clsx('px-6 py-4 whitespace-nowrap', {
