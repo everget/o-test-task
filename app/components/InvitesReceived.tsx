@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import {
 	Button,
@@ -21,7 +21,7 @@ const fetchInvitesReceived = async ({ userId }: { userId: string }) => {
 export function InvitesReceived({ userId }: { userId: string }) {
 	const queryClient = useQueryClient();
 
-	const { data: invites } = useQuery({
+	const { data: invites } = useSuspenseQuery({
 		queryKey: ['invitesReceived', userId],
 		queryFn: () => fetchInvitesReceived({ userId }),
 		staleTime: 1000 * 30,
@@ -79,50 +79,46 @@ export function InvitesReceived({ userId }: { userId: string }) {
 					</Column>
 				</TableHeader>
 				<TableBody>
-					{invites &&
-						Array.isArray(invites.data) &&
-						invites.data.map((invite: Invite) => (
-							<Row key={invite.id} className='hover:bg-gray-50'>
-								<Cell className='px-6 py-4 whitespace-nowrap'>
-									{invite.fromUserId}
-								</Cell>
-								<Cell className='px-6 py-4 whitespace-nowrap'>
-									{invite.permissions &&
-										JSON.stringify(reducePermissions(invite.permissions))}
-								</Cell>
-								<Cell
-									className={clsx('px-6 py-4 whitespace-nowrap', {
-										'text-yellow-600': invite.status === 'pending',
-										'text-green-600': invite.status === 'accepted',
-										'text-red-600': invite.status === 'declined',
-									})}
-								>
-									{invite.status}
-								</Cell>
-								<Cell className='px-6 py-4 whitespace-nowrap'>
-									{invite.status === 'pending' && (
-										<>
-											<Button
-												className='mr-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-300 ease-in-out'
-												onPress={() =>
-													handleInviteResponse(invite.id, 'accepted')
-												}
-											>
-												Accept
-											</Button>
-											<Button
-												className='px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition duration-300 ease-in-out'
-												onPress={() =>
-													handleInviteResponse(invite.id, 'declined')
-												}
-											>
-												Decline
-											</Button>
-										</>
-									)}
-								</Cell>
-							</Row>
-						))}
+					{invites?.data?.map((invite: Invite) => (
+						<Row key={invite.id} className='hover:bg-gray-50'>
+							<Cell className='px-6 py-4 whitespace-nowrap'>{invite.fromUserId}</Cell>
+							<Cell className='px-6 py-4 whitespace-nowrap'>
+								{invite.permissions &&
+									JSON.stringify(reducePermissions(invite.permissions))}
+							</Cell>
+							<Cell
+								className={clsx('px-6 py-4 whitespace-nowrap', {
+									'text-yellow-600': invite.status === 'pending',
+									'text-green-600': invite.status === 'accepted',
+									'text-red-600': invite.status === 'declined',
+								})}
+							>
+								{invite.status}
+							</Cell>
+							<Cell className='px-6 py-4 whitespace-nowrap'>
+								{invite.status === 'pending' && (
+									<>
+										<Button
+											className='mr-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md transition duration-300 ease-in-out'
+											onPress={() =>
+												handleInviteResponse(invite.id, 'accepted')
+											}
+										>
+											Accept
+										</Button>
+										<Button
+											className='px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition duration-300 ease-in-out'
+											onPress={() =>
+												handleInviteResponse(invite.id, 'declined')
+											}
+										>
+											Decline
+										</Button>
+									</>
+								)}
+							</Cell>
+						</Row>
+					))}
 				</TableBody>
 			</Table>
 		</div>
